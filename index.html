@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Hitster · Klasična glazba</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400&family=Josefin+Sans:wght@300&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --gold: #c49a3c;
+  --gold-light: #e8c96a;
+  --bg: #0d1a1a;
+  --teal: #2ebfa7;
+  --teal-dark: #1d7a6b;
+  --text-dim: rgba(255,255,255,0.55);
+}
+
+html, body {
+  width: 100%; height: 100%;
+  background: var(--bg);
+  color: white;
+  font-family: 'Cormorant Garamond', serif;
+  overflow: hidden;
+}
+
+/* ── LOGIN SCREEN ── */
+#login-screen {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  z-index: 100;
+  padding: 40px;
+  text-align: center;
+}
+
+#login-screen .glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 30%, rgba(29,122,107,0.2) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+#login-screen .title {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 300;
+  font-size: 13px;
+  letter-spacing: 6px;
+  text-transform: uppercase;
+  color: var(--teal);
+  margin-bottom: 8px;
+  position: relative;
+  z-index: 2;
+}
+
+#login-screen .subtitle {
+  font-family: 'Josefin Sans', sans-serif;
+  font-weight: 300;
+  font-size: 9px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: rgba(46,191,167,0.45);
+  margin-bottom: 60px;
+  position: relative;
+  z-index: 2;
+}
+
+.login-btn {
+  position: relative;
+  z-index: 2;
+  background: transparent;
+  border: 1px solid var(--teal);
+  color: var(--teal);
+  font-family: 'Josefin Sans', sans-serif;
+  font-weight: 300;
+  font-size: 10px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  padding: 14px 36px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+.login-btn:hover {
+  background: rgba(46,191,167,0.1);
+}
+
+#login-screen .rings-bg {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.4;
+}
+
+/* ── PLAYER SCREEN ── */
+#player-screen {
+  position: fixed;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  padding: 40px 30px;
+}
+
+#player-screen.visible {
+  display: flex;
+}
+
+/* Top line */
+#player-screen::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--teal-dark), var(--teal), var(--teal-dark));
+}
+
+/* Bottom line */
+#player-screen::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--teal-dark), var(--teal), var(--teal-dark));
+}
+
+.player-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 50%, rgba(29,122,107,0.12) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* Rings ornament */
+.rings-container {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.rings-container svg {
+  width: min(80vw, 80vh);
+  height: min(80vw, 80vh);
+  opacity: 1;
+}
+
+/* Center content */
+.player-content {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  width: 100%;
+  max-width: 340px;
+}
+
+/* Status */
+#status-text {
+  font-family: 'Josefin Sans', sans-serif;
+  font-weight: 300;
+  font-size: 9px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: rgba(46,191,167,0.5);
+  margin-bottom: 48px;
+  min-height: 16px;
+  transition: opacity 0.3s;
+}
+
+/* Play button */
+#play-btn {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: 1.5px solid var(--teal);
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.25s;
+  margin-bottom: 48px;
+  position: relative;
+}
+
+#play-btn:hover {
+  background: rgba(46,191,167,0.08);
+  border-color: var(--teal-light, #4de0cc);
+}
+
+#play-btn:active {
+  transform: scale(0.95);
+}
+
+#play-btn svg {
+  width: 28px;
+  height: 28px;
+  fill: var(--teal);
+  transition: all 0.2s;
+}
+
+/* Pulse ring when playing */
+#play-btn.playing::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  border: 1px solid rgba(46,191,167,0.25);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 0.5; }
+  50% { transform: scale(1.08); opacity: 0.15; }
+}
+
+/* Progress bar */
+.progress-wrap {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+#progress-bar-bg {
+  width: 100%;
+  height: 1px;
+  background: rgba(46,191,167,0.2);
+  position: relative;
+  cursor: pointer;
+}
+
+#progress-bar-fill {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  background: linear-gradient(90deg, var(--teal-dark), var(--teal));
+  width: 0%;
+  transition: width 0.5s linear;
+}
+
+#progress-bar-dot {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--teal);
+  left: 0%;
+  transition: left 0.5s linear;
+}
+
+/* Timer */
+.timer-row {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.timer-text {
+  font-family: 'Josefin Sans', sans-serif;
+  font-weight: 300;
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: rgba(46,191,167,0.45);
+}
+
+/* Error */
+#error-msg {
+  font-family: 'Josefin Sans', sans-serif;
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: rgba(255,100,100,0.7);
+  text-align: center;
+  margin-top: 24px;
+  display: none;
+}
+
+/* Spotify hidden embed */
+#spotify-embed {
+  position: fixed;
+  bottom: -200px;
+  left: -200px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Not ready overlay */
+#loading-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  flex-direction: column;
+  gap: 16px;
+}
+
+#loading-overlay.hidden { display: none; }
+
+.loading-dot {
+  display: flex; gap: 6px;
+}
+.loading-dot span {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--teal);
+  animation: blink 1.2s ease-in-out infinite;
+}
+.loading-dot span:nth-child(2) { animation-delay: 0.2s; }
+.loading-dot span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes blink {
+  0%, 80%, 100% { opacity: 0.15; }
+  40% { opacity: 1; }
+}
+
+.loading-text {
+  font-family: 'Josefin Sans', sans-serif;
+  font-size: 9px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: rgba(46,191,167,0.45);
+}
+
+</style>
+</head>
+<body>
+
+<!-- ── LOGIN SCREEN ── -->
+<div id="login-screen">
+  <div class="glow"></div>
+
+  <svg class="rings-bg" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg" style="position:absolute;inset:0;width:100%;height:100%;opacity:0.15;">
+    <circle cx="200" cy="200" r="160" fill="none" stroke="#2ebfa7" stroke-width="0.8"/>
+    <circle cx="200" cy="200" r="130" fill="none" stroke="#2ebfa7" stroke-width="0.5"/>
+    <circle cx="200" cy="200" r="100" fill="none" stroke="#2ebfa7" stroke-width="0.4"/>
+    <circle cx="200" cy="40"  r="2" fill="#2ebfa7" opacity="0.6"/>
+    <circle cx="360" cy="200" r="2" fill="#2ebfa7" opacity="0.6"/>
+    <circle cx="200" cy="360" r="2" fill="#2ebfa7" opacity="0.6"/>
+    <circle cx="40"  cy="200" r="2" fill="#2ebfa7" opacity="0.6"/>
+  </svg>
+
+  <div class="title">Klasična glazba</div>
+  <div class="subtitle">Hitster · Card Game</div>
+
+  <button class="login-btn" onclick="startLogin()">
+    Spoji Spotify
+  </button>
+</div>
+
+<!-- ── LOADING ── -->
+<div id="loading-overlay" class="hidden">
+  <div class="loading-dot">
+    <span></span><span></span><span></span>
+  </div>
+  <div class="loading-text">Učitavanje...</div>
+</div>
+
+<!-- ── PLAYER SCREEN ── -->
+<div id="player-screen">
+  <div class="player-glow"></div>
+
+  <!-- Rings ornament -->
+  <div class="rings-container">
+    <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="200" cy="200" r="180" fill="none" stroke="rgba(46,191,167,0.10)" stroke-width="0.8"/>
+      <circle cx="200" cy="200" r="148" fill="none" stroke="rgba(46,191,167,0.07)" stroke-width="0.5"/>
+      <circle cx="200" cy="200" r="116" fill="none" stroke="rgba(46,191,167,0.05)" stroke-width="0.4"/>
+      <circle cx="200" cy="20"  r="2.5" fill="rgba(46,191,167,0.4)"/>
+      <circle cx="380" cy="200" r="2.5" fill="rgba(46,191,167,0.4)"/>
+      <circle cx="200" cy="380" r="2.5" fill="rgba(46,191,167,0.4)"/>
+      <circle cx="20"  cy="200" r="2.5" fill="rgba(46,191,167,0.4)"/>
+    </svg>
+  </div>
+
+  <div class="player-content">
+
+    <div id="status-text">Spremi se...</div>
+
+    <!-- Play / Pause button -->
+    <button id="play-btn" onclick="togglePlay()">
+      <svg id="play-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+    </button>
+
+    <!-- Progress + Timer -->
+    <div class="progress-wrap">
+      <div id="progress-bar-bg" onclick="seekTo(event)">
+        <div id="progress-bar-fill"></div>
+        <div id="progress-bar-dot"></div>
+      </div>
+      <div class="timer-row">
+        <span class="timer-text" id="time-current">0:00</span>
+        <span class="timer-text" id="time-total">–:––</span>
+      </div>
+    </div>
+
+    <div id="error-msg">Greška pri reprodukciji</div>
+
+  </div>
+</div>
+
+<!-- Hidden Spotify embed fallback -->
+<iframe id="spotify-embed" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+
+<script src="https://sdk.scdn.co/spotify-player.js"></script>
+<script>
+// ── CONFIG ──
+const CLIENT_ID = '8d30d87a42a148afa5faee562be17fe5';
+const REDIRECT_URI = 'https://zalac777.github.io/hitster/callback';
+const SCOPES = 'streaming user-read-email user-read-private user-read-playback-state user-modify-playback-state';
+
+// ── GET TRACK ID FROM URL ──
+function getTrackId() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('t') || '2PI6xlYCPb23CZg66oe2vk'; // default: Arvo Pärt
+}
+
+// ── AUTH ──
+function startLogin() {
+  const state = Math.random().toString(36).slice(2);
+  sessionStorage.setItem('spotify_state', state);
+  const url = `https://accounts.spotify.com/authorize?client_id=${CLIENT_ID}&response_type=token&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${encodeURIComponent(SCOPES)}&state=${state}&show_dialog=false`;
+  window.location = url;
+}
+
+function getTokenFromHash() {
+  const hash = window.location.hash.substring(1);
+  const params = new URLSearchParams(hash);
+  return params.get('access_token');
+}
+
+function getStoredToken() {
+  const token = sessionStorage.getItem('spotify_token');
+  const expiry = sessionStorage.getItem('spotify_expiry');
+  if (token && expiry && Date.now() < parseInt(expiry)) return token;
+  return null;
+}
+
+// ── PLAYER STATE ──
+let player = null;
+let deviceId = null;
+let isPlaying = false;
+let duration = 0;
+let position = 0;
+let progressInterval = null;
+let token = null;
+
+// ── FORMAT TIME ──
+function fmt(ms) {
+  const s = Math.floor(ms / 1000);
+  return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+}
+
+// ── UPDATE PROGRESS UI ──
+function updateProgress(pos, dur) {
+  position = pos;
+  duration = dur;
+  const pct = dur > 0 ? (pos / dur) * 100 : 0;
+  document.getElementById('progress-bar-fill').style.width = pct + '%';
+  document.getElementById('progress-bar-dot').style.left = pct + '%';
+  document.getElementById('time-current').textContent = fmt(pos);
+  document.getElementById('time-total').textContent = dur > 0 ? fmt(dur) : '–:––';
+}
+
+// ── SEEK ──
+function seekTo(e) {
+  if (!player || duration === 0) return;
+  const bar = document.getElementById('progress-bar-bg');
+  const rect = bar.getBoundingClientRect();
+  const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  const ms = Math.floor(pct * duration);
+  player.seek(ms);
+}
+
+// ── TOGGLE PLAY ──
+function togglePlay() {
+  if (!player) return;
+  player.togglePlay();
+}
+
+// ── SET PLAY ICON ──
+function setPlayIcon(playing) {
+  isPlaying = playing;
+  const btn = document.getElementById('play-btn');
+  const icon = document.getElementById('play-icon');
+  btn.classList.toggle('playing', playing);
+  if (playing) {
+    icon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
+  } else {
+    icon.innerHTML = '<path d="M8 5v14l11-7z"/>';
+  }
+}
+
+// ── SET STATUS ──
+function setStatus(text) {
+  document.getElementById('status-text').textContent = text;
+}
+
+// ── INIT SPOTIFY SDK ──
+window.onSpotifyWebPlaybackSDKReady = () => {
+  player = new Spotify.Player({
+    name: 'Hitster Klasična',
+    getOAuthToken: cb => cb(token),
+    volume: 0.8,
+  });
+
+  player.addListener('ready', ({ device_id }) => {
+    deviceId = device_id;
+    document.getElementById('loading-overlay').classList.add('hidden');
+    document.getElementById('player-screen').classList.add('visible');
+    setStatus('Spremi se...');
+    // Auto-load the track
+    loadTrack(getTrackId());
+  });
+
+  player.addListener('not_ready', () => {
+    setStatus('Player nije dostupan');
+  });
+
+  player.addListener('player_state_changed', state => {
+    if (!state) return;
+    setPlayIcon(!state.paused);
+    updateProgress(state.position, state.duration);
+
+    clearInterval(progressInterval);
+    if (!state.paused) {
+      progressInterval = setInterval(() => {
+        position += 500;
+        updateProgress(position, duration);
+      }, 500);
+    }
+
+    if (state.paused && state.position === 0) {
+      setStatus('Spremi se...');
+    } else if (state.paused) {
+      setStatus('Pauza');
+    } else {
+      setStatus('Svira');
+    }
+  });
+
+  player.addListener('initialization_error', ({ message }) => {
+    showError('Greška inicijalizacije: ' + message);
+  });
+
+  player.addListener('authentication_error', ({ message }) => {
+    sessionStorage.removeItem('spotify_token');
+    window.location = window.location.pathname + window.location.search;
+  });
+
+  player.addListener('account_error', () => {
+    showError('Potreban Spotify Premium');
+    // Fallback to embed
+    loadEmbed(getTrackId());
+  });
+
+  player.connect();
+};
+
+// ── LOAD TRACK via Web API ──
+async function loadTrack(trackId) {
+  setStatus('Učitavanje...');
+  try {
+    const res = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        uris: [`spotify:track:${trackId}`],
+        position_ms: 0,
+      }),
+    });
+    if (!res.ok) throw new Error(res.status);
+  } catch(e) {
+    showError('Nije moguće učitati pjesmu');
+  }
+}
+
+// ── FALLBACK EMBED ──
+function loadEmbed(trackId) {
+  setStatus('Embed mode');
+  const iframe = document.getElementById('spotify-embed');
+  iframe.src = `https://open.spotify.com/embed/track/${trackId}?autoplay=1`;
+  iframe.style.bottom = '0';
+  iframe.style.left = '0';
+  iframe.style.width = '100%';
+  iframe.style.height = '80px';
+  iframe.style.opacity = '0.01'; // Almost invisible but functional
+}
+
+// ── SHOW ERROR ──
+function showError(msg) {
+  const el = document.getElementById('error-msg');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+// ── INIT ──
+function init() {
+  // Check if returning from Spotify auth (callback)
+  if (window.location.pathname.includes('callback') || window.location.hash.includes('access_token')) {
+    const t = getTokenFromHash();
+    if (t) {
+      const expiry = Date.now() + 3600 * 1000;
+      sessionStorage.setItem('spotify_token', t);
+      sessionStorage.setItem('spotify_expiry', expiry.toString());
+      // Redirect back to player with track param
+      const state = new URLSearchParams(window.location.search).get('state') || '';
+      const trackId = sessionStorage.getItem('pending_track') || getTrackId();
+      window.location = `https://zalac777.github.io/hitster/?t=${trackId}#`;
+      return;
+    }
+  }
+
+  token = getStoredToken();
+
+  if (token) {
+    // Already logged in — show loading, init SDK
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('loading-overlay').classList.remove('hidden');
+    // SDK will call onSpotifyWebPlaybackSDKReady
+  } else {
+    // Show login screen
+    document.getElementById('login-screen').style.display = 'flex';
+    // Store track ID for after login
+    const trackId = getTrackId();
+    sessionStorage.setItem('pending_track', trackId);
+  }
+}
+
+init();
+</script>
+</body>
+</html>
