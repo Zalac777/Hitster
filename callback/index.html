@@ -11,7 +11,8 @@ body {
   align-items: center;
   justify-content: center;
   height: 100vh;
-  font-family: sans-serif;
+  flex-direction: column;
+  gap: 16px;
 }
 .dot { display:flex; gap:6px; }
 .dot span {
@@ -26,32 +27,78 @@ body {
   0%,80%,100% { opacity:.15; }
   40% { opacity:1; }
 }
+.msg {
+  font-family: sans-serif;
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: rgba(46,191,167,0.4);
+}
 </style>
 </head>
 <body>
 <div class="dot"><span></span><span></span><span></span></div>
+<div class="msg" id="msg">Prijava...</div>
 <script>
-// Parse token from hash
-const hash = window.location.hash.substring(1);
-const params = new URLSearchParams(hash);
-const token = params.get('access_token');
-const expiresIn = params.get('expires_in');
+const CLIENT_ID = '8d30d87a42a148afa5faee562be17fe5';
+const REDIRECT_URI = 'https://zalac777.github.io/Hitster/callback';
 
-if (token) {
-  const expiry = Date.now() + (parseInt(expiresIn) || 3600) * 1000;
-  sessionStorage.setItem('spotify_token', token);
-  sessionStorage.setItem('spotify_expiry', expiry.toString());
+async function exchangeCode() {
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+  const error = params.get('error');
 
-  // Get track from state or pending
-  const trackId = sessionStorage.getItem('pending_track') || '';
-  const redirect = trackId
-    ? `https://zalac777.github.io/hitster/?t=${trackId}`
-    : `https://zalac777.github.io/hitster/`;
-  window.location.replace(redirect);
-} else {
-  // No token — back to start
-  window.location.replace('https://zalac777.github.io/hitster/');
+  if (error || !code) {
+    document.getElementById('msg').textContent = 'Greška: ' + (error || 'nema koda');
+    setTimeout(() => window.location.replace('https://zalac777.github.io/Hitster/'), 2000);
+    return;
+  }
+
+  const verifier = sessionStorage.getItem('pkce_verifier');
+  if (!verifier) {
+    document.getElementById('msg').textContent = 'Greška: nema verifier';
+    setTimeout(() => window.location.replace('https://zalac777.github.io/Hitster/'), 2000);
+    return;
+  }
+
+  try {
+    const res = await fetch('https://accounts.spotify.com/api/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        code: code,
+        redirect_uri: REDIRECT_URI,
+        client_id: CLIENT_ID,
+        code_verifier: verifier,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (data.access_token) {
+      const expiry = Date.now() + (data.expires_in || 3600) * 1000;
+      sessionStorage.setItem('spotify_token', data.access_token);
+      sessionStorage.setItem('spotify_expiry', expiry.toString());
+      if (data.refresh_token) {
+        sessionStorage.setItem('spotify_refresh', data.refresh_token);
+      }
+      const trackId = sessionStorage.getItem('pending_track') || '';
+      const redirect = trackId
+        ? 'https://zalac777.github.io/Hitster/?t=' + trackId
+        : 'https://zalac777.github.io/Hitster/';
+      window.location.replace(redirect);
+    } else {
+      document.getElementById('msg').textContent = 'Greška: ' + (data.error_description || JSON.stringify(data));
+      setTimeout(() => window.location.replace('https://zalac777.github.io/Hitster/'), 3000);
+    }
+  } catch(e) {
+    document.getElementById('msg').textContent = 'Greška: ' + e.message;
+    setTimeout(() => window.location.replace('https://zalac777.github.io/Hitster/'), 3000);
+  }
 }
+
+exchangeCode();
 </script>
 </body>
 </html>
