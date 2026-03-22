@@ -455,22 +455,34 @@ async function playTrack(trackId) {
   if (!deviceId) return;
 
   setStatus('Učitavanje...');
+
   try {
+    // Korak 1: Prebaci playback na naš device
+    await fetch('https://api.spotify.com/v1/me/player', {
+      method: 'PUT',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ device_ids: [deviceId], play: false }),
+    });
+
+    // Korak 2: Kratka pauza da se device registrira
+    await new Promise(r => setTimeout(r, 800));
+
+    // Korak 3: Pusti track
     const res = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
       method: 'PUT',
       headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ uris: [`spotify:track:${trackId}`], position_ms: 0 }),
     });
+
     if (!res.ok) {
-      // 403 = Free account ili Premium problem → embed fallback
       if (res.status === 403 || res.status === 401) {
-        switchToEmbed();
+        switchToEmbed(trackId);
       } else {
-        showError('Nije moguće učitati pjesmu (' + res.status + ')');
+        showError('Greška ' + res.status);
       }
     }
   } catch(e) {
-    switchToEmbed();
+    switchToEmbed(trackId);
   }
 }
 
