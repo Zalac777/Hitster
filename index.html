@@ -461,9 +461,16 @@ async function playTrack(trackId) {
       headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ uris: [`spotify:track:${trackId}`], position_ms: 0 }),
     });
-    if (!res.ok) throw new Error(res.status);
+    if (!res.ok) {
+      // 403 = Free account ili Premium problem → embed fallback
+      if (res.status === 403 || res.status === 401) {
+        switchToEmbed();
+      } else {
+        showError('Nije moguće učitati pjesmu (' + res.status + ')');
+      }
+    }
   } catch(e) {
-    showError('Nije moguće učitati pjesmu');
+    switchToEmbed();
   }
 }
 
@@ -511,13 +518,16 @@ function startEmbedTimer() {
     }
   }, 500);
 }
-function switchToEmbed() {
+function switchToEmbed(trackId) {
   embedMode = true;
   document.getElementById('loading-overlay').classList.add('hidden');
   document.getElementById('player-screen').classList.add('visible');
-  setStatus('Skeniraj karticu');
-  const trackId = getTrackId() || sessionStorage.getItem('pending_track');
-  if (trackId) loadEmbed(trackId);
+  const tid = trackId || currentTrackId || getTrackId() || sessionStorage.getItem('pending_track');
+  if (tid) {
+    loadEmbed(tid);
+  } else {
+    setStatus('Skeniraj karticu');
+  }
 }
 
 // ── SCANNER ──
@@ -644,15 +654,15 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     else setStatus('Svira');
   });
 
-  player.addListener('initialization_error', () => switchToEmbed());
+  player.addListener('initialization_error', () => switchToEmbed(currentTrackId));
   player.addListener('authentication_error', () => {
     sessionStorage.removeItem('spotify_token');
     sessionStorage.removeItem('spotify_expiry');
     window.location.replace('https://zalac777.github.io/Hitster/');
   });
-  player.addListener('account_error', () => switchToEmbed());
+  player.addListener('account_error', () => switchToEmbed(currentTrackId));
 
-  setTimeout(() => { if (!deviceId) switchToEmbed(); }, 8000);
+  setTimeout(() => { if (!deviceId) switchToEmbed(currentTrackId); }, 8000);
   player.connect();
 };
 
