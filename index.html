@@ -337,6 +337,7 @@ html, body {
     </button>
 
     <div id="error-msg"></div>
+    <div id="debug-log" style="margin-top:16px;font-family:monospace;font-size:8px;color:rgba(46,191,167,0.4);text-align:left;width:100%;max-height:80px;overflow-y:auto;line-height:1.6;"></div>
   </div>
 </div>
 
@@ -407,6 +408,17 @@ let currentTrackId = '';
 let scannerStream = null;
 let barcodeDetector = null;
 
+// ── DEBUG ──
+function dbg(msg) {
+  const el = document.getElementById('debug-log');
+  if (!el) return;
+  const line = document.createElement('div');
+  line.textContent = '› ' + msg;
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+  console.log('[Hitster]', msg);
+}
+
 // ── UTILS ──
 function fmt(ms) {
   const s = Math.floor(ms/1000);
@@ -455,6 +467,7 @@ async function playTrack(trackId) {
   if (!deviceId) return;
 
   setStatus('Učitavanje...');
+  dbg('playTrack: ' + trackId.slice(0,8));
 
   try {
     // Korak 1: Prebaci playback na naš device
@@ -464,9 +477,11 @@ async function playTrack(trackId) {
       body: JSON.stringify({ device_ids: [deviceId], play: false }),
     });
 
+    dbg('Transfer OK, waiting...');
     // Korak 2: Kratka pauza da se device registrira
     await new Promise(r => setTimeout(r, 800));
 
+    dbg('Sending play command...');
     // Korak 3: Pusti track
     const res = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
       method: 'PUT',
@@ -474,6 +489,7 @@ async function playTrack(trackId) {
       body: JSON.stringify({ uris: [`spotify:track:${trackId}`], position_ms: 0 }),
     });
 
+    dbg('Play response: ' + res.status);
     if (!res.ok) {
       if (res.status === 403 || res.status === 401) {
         switchToEmbed(trackId);
@@ -640,6 +656,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
   });
 
   player.addListener('ready', ({ device_id }) => {
+    dbg('SDK ready, device: ' + device_id.slice(0,8));
     deviceId = device_id;
     document.getElementById('loading-overlay').classList.add('hidden');
     document.getElementById('player-screen').classList.add('visible');
@@ -648,7 +665,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     if (trackId) playTrack(trackId);
   });
 
-  player.addListener('not_ready', () => setStatus('Player nije dostupan'));
+  player.addListener('not_ready', () => { dbg('SDK not ready'); setStatus('Player nije dostupan'); });
 
   player.addListener('player_state_changed', state => {
     if (!state) return;
@@ -666,15 +683,15 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     else setStatus('Svira');
   });
 
-  player.addListener('initialization_error', () => switchToEmbed(currentTrackId));
+  player.addListener('initialization_error', (e) => { dbg('Init error: ' + e.message); switchToEmbed(currentTrackId); });
   player.addListener('authentication_error', () => {
     sessionStorage.removeItem('spotify_token');
     sessionStorage.removeItem('spotify_expiry');
     window.location.replace('https://zalac777.github.io/Hitster/');
   });
-  player.addListener('account_error', () => switchToEmbed(currentTrackId));
+  player.addListener('account_error', (e) => { dbg('Account error - Free account?'); switchToEmbed(currentTrackId); });
 
-  setTimeout(() => { if (!deviceId) switchToEmbed(currentTrackId); }, 8000);
+  setTimeout(() => { if (!deviceId) { dbg('SDK timeout - switching to embed'); switchToEmbed(currentTrackId); } }, 8000);
   player.connect();
 };
 
